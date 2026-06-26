@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poker Payout Calculator</title>
+<style>
+  body { 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+    background-color: #f4f7f6; 
+    margin: 0; 
+    padding: 16px; 
+    color: #333; 
+  }
+  .card { 
+    background: #fff; 
+    border-radius: 12px; 
+    padding: 20px; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+    max-width: 600px; 
+    margin: 0 auto; 
+  }
+  h1 { 
+    text-align: center; 
+    color: #2c3e50; 
+    font-size: 22px; 
+    margin-top: 0;
+  }
+  .header-settings { 
+    display: flex; 
+    justify-content: space-between; 
+    margin-bottom: 20px; 
+    align-items: center; 
+    background: #ecf0f1;
+    padding: 12px;
+    border-radius: 8px;
+  }
+  .header-settings label { font-weight: bold; font-size: 15px; }
+  .header-settings input { 
+    width: 60px; 
+    padding: 6px; 
+    text-align: right; 
+    font-size: 16px; 
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+  }
+  .summary { 
+    background: #e8f6f3; 
+    padding: 15px; 
+    border-radius: 8px; 
+    margin-bottom: 20px; 
+  }
+  .summary p { 
+    margin: 6px 0; 
+    font-weight: bold; 
+    display: flex; 
+    justify-content: space-between; 
+    font-size: 15px;
+  }
+  .player-row { 
+    border-bottom: 1px solid #eee; 
+    padding: 16px 0; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+  }
+  .player-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+  }
+  .player-name-input {
+    border: none; 
+    font-size: 18px; 
+    font-weight: bold; 
+    width: 60%; 
+    background: transparent;
+    color: #2c3e50;
+    border-bottom: 1px dashed #ccc;
+  }
+  .player-inputs { 
+    display: flex; 
+    gap: 12px; 
+  }
+  .input-group { 
+    display: flex; 
+    flex-direction: column; 
+    flex: 1; 
+  }
+  .input-group label { 
+    font-size: 12px; 
+    color: #7f8c8d; 
+    margin-bottom: 4px;
+  }
+  .input-group input { 
+    padding: 10px; 
+    border: 1px solid #bdc3c7; 
+    border-radius: 6px; 
+    font-size: 16px; 
+  }
+  .player-results { 
+    display: flex; 
+    justify-content: space-between; 
+    font-size: 15px; 
+    background: #f8f9fa; 
+    padding: 12px; 
+    border-radius: 6px; 
+  }
+  .result-positive { color: #27ae60; font-weight: bold; }
+  .result-negative { color: #c0392b; font-weight: bold; }
+  .btn { 
+    background: #3498db; 
+    color: white; 
+    border: none; 
+    padding: 14px 16px; 
+    border-radius: 8px; 
+    font-size: 16px; 
+    font-weight: bold;
+    cursor: pointer; 
+    width: 100%; 
+    margin-top: 15px; 
+  }
+  .btn:active { background: #2980b9; }
+  .btn-remove { 
+    background: #e74c3c; 
+    padding: 6px 12px; 
+    font-size: 13px; 
+    width: auto; 
+    margin: 0; 
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>Poker Game Tracker</h1>
+  
+  <div class="header-settings">
+    <label for="unitPrice">Buy-in Unit Price ($):</label>
+    <input type="number" id="unitPrice" value="24" oninput="calculate()">
+  </div>
+
+  <div class="summary">
+    <p><span>Total Pot:</span> <span id="totalPot">$0.00</span></p>
+    <p><span>Total Chips on Table:</span> <span id="totalChips">0</span></p>
+    <p><span>Calculated Chip Value:</span> <span id="chipValue">$0.00</span></p>
+  </div>
+
+  <div id="playersList"></div>
+
+  <button class="btn" onclick="addPlayer()">+ Add Player</button>
+</div>
+
+<script>
+  // Initialized without certain removed players to keep the ledger clean
+  let players = [
+    { id: 1, name: 'Rajesh', buyInUnits: 3, endingChips: 2735 },
+    { id: 2, name: 'Ram', buyInUnits: 2, endingChips: 1837 },
+    { id: 3, name: 'Sree', buyInUnits: 5, endingChips: 0 }
+  ];
+  let nextId = 4;
+
+  function renderPlayers() {
+    const list = document.getElementById('playersList');
+    list.innerHTML = '';
+    
+    players.forEach(p => {
+      const div = document.createElement('div');
+      div.className = 'player-row';
+      div.innerHTML = `
+        <div class="player-header">
+          <input type="text" class="player-name-input" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)">
+          <button class="btn btn-remove" onclick="removePlayer(${p.id})">Remove</button>
+        </div>
+        <div class="player-inputs">
+          <div class="input-group">
+            <label>Buy-in Units</label>
+            <input type="number" inputmode="numeric" value="${p.buyInUnits}" min="0" oninput="updatePlayer(${p.id}, 'buyInUnits', this.value)">
+          </div>
+          <div class="input-group">
+            <label>Ending Chips</label>
+            <input type="number" inputmode="numeric" value="${p.endingChips}" min="0" oninput="updatePlayer(${p.id}, 'endingChips', this.value)">
+          </div>
+        </div>
+        <div class="player-results">
+          <span>Payout: <strong id="payout-${p.id}">$0.00</strong></span>
+          <span>P/L: <strong id="pl-${p.id}">$0.00</strong></span>
+        </div>
+      `;
+      list.appendChild(div);
+    });
+    calculate();
+  }
+
+  function addPlayer() {
+    players.push({ id: nextId++, name: 'New Player', buyInUnits: 1, endingChips: 0 });
+    renderPlayers();
+  }
+
+  function removePlayer(id) {
+    players = players.filter(p => p.id !== id);
+    renderPlayers();
+  }
+
+  function updatePlayer(id, field, value) {
+    const player = players.find(p => p.id === id);
+    if (player) {
+      player[field] = field === 'name' ? value : parseFloat(value) || 0;
+      calculate();
+    }
+  }
+
+  function calculate() {
+    const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
+    
+    let totalPot = 0;
+    let totalChips = 0;
+    
+    players.forEach(p => {
+      totalPot += p.buyInUnits * unitPrice;
+      totalChips += p.endingChips;
+    });
+
+    const chipValue = totalChips > 0 ? totalPot / totalChips : 0;
+
+    document.getElementById('totalPot').innerText = '$' + totalPot.toFixed(2);
+    document.getElementById('totalChips').innerText = totalChips;
+    document.getElementById('chipValue').innerText = '$' + chipValue.toFixed(4);
+
+    players.forEach(p => {
+      const totalIn = p.buyInUnits * unitPrice;
+      const payout = p.endingChips * chipValue;
+      const pl = payout - totalIn;
+
+      document.getElementById('payout-' + p.id).innerText = '$' + payout.toFixed(2);
+      
+      const plEl = document.getElementById('pl-' + p.id);
+      plEl.innerText = (pl >= 0 ? '+$' : '-$') + Math.abs(pl).toFixed(2);
+      plEl.className = pl >= 0 ? 'result-positive' : 'result-negative';
+    });
+  }
+
+  renderPlayers();
+</script>
+</body>
+</html>
