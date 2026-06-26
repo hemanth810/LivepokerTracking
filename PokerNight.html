@@ -26,16 +26,25 @@
     font-size: 22px; 
     margin-top: 0;
   }
+  
+  /* Top Action Buttons Grid */
+  .header-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
   .header-settings { 
     display: flex; 
     justify-content: space-between; 
-    margin-bottom: 20px; 
+    margin-bottom: 15px; 
     align-items: center; 
     background: #ecf0f1;
     padding: 12px;
     border-radius: 8px;
   }
-  .header-settings label { font-weight: bold; font-size: 15px; }
+  .header-settings label { font-weight: bold; font-size: 14px; }
   .header-settings input { 
     width: 60px; 
     padding: 6px; 
@@ -44,19 +53,35 @@
     border: 1px solid #bdc3c7;
     border-radius: 4px;
   }
-  .summary { 
-    background: #e8f6f3; 
-    padding: 15px; 
-    border-radius: 8px; 
-    margin-bottom: 20px; 
+  .date-picker {
+    width: 140px !important;
+    text-align: center !important;
   }
-  .summary p { 
-    margin: 6px 0; 
-    font-weight: bold; 
-    display: flex; 
-    justify-content: space-between; 
-    font-size: 15px;
+  
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    background: #e8f6f3;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
   }
+  .stat-box {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    padding-bottom: 4px;
+  }
+  .stat-box:last-child, .stat-box:nth-last-child(2) {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  .stat-box span { color: #555; }
+  .stat-box strong { color: #2c3e50; }
+  .highlight-chip { color: #e67e22 !important; }
+  
   .player-row { 
     border-bottom: 1px solid #eee; 
     padding: 16px 0; 
@@ -67,16 +92,30 @@
   .player-header { 
     display: flex; 
     justify-content: space-between; 
-    align-items: center; 
+    align-items: flex-start; 
+  }
+  .player-info-stack {
+    display: flex;
+    flex-direction: column;
+    width: 65%;
+    gap: 6px;
   }
   .player-name-input {
     border: none; 
     font-size: 18px; 
     font-weight: bold; 
-    width: 60%; 
     background: transparent;
     color: #2c3e50;
     border-bottom: 1px dashed #ccc;
+    padding-bottom: 2px;
+  }
+  .player-email-input {
+    border: none; 
+    font-size: 13px; 
+    background: transparent;
+    color: #7f8c8d;
+    border-bottom: 1px dashed #ccc;
+    padding-bottom: 2px;
   }
   .player-inputs { 
     display: flex; 
@@ -101,26 +140,33 @@
   .player-results { 
     display: flex; 
     justify-content: space-between; 
-    font-size: 15px; 
+    align-items: center;
+    font-size: 14px; 
     background: #f8f9fa; 
     padding: 12px; 
     border-radius: 6px; 
   }
+  .result-data {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
   .result-positive { color: #27ae60; font-weight: bold; }
   .result-negative { color: #c0392b; font-weight: bold; }
+  
   .btn { 
-    background: #3498db; 
     color: white; 
     border: none; 
-    padding: 14px 16px; 
     border-radius: 8px; 
-    font-size: 16px; 
+    font-size: 14px; 
     font-weight: bold;
     cursor: pointer; 
-    width: 100%; 
-    margin-top: 15px; 
+    padding: 12px;
+    text-align: center;
   }
-  .btn:active { background: #2980b9; }
+  .btn-add { background: #3498db; width: 100%; font-size: 16px; padding: 14px 16px; margin-top: 15px; }
+  .btn-add:active { background: #2980b9; }
+  
   .btn-remove { 
     background: #e74c3c; 
     padding: 6px 12px; 
@@ -129,37 +175,187 @@
     margin: 0; 
     border-radius: 4px;
   }
+  
+  .btn-reset { background: #e74c3c; }
+  .btn-reset:active { background: #c0392b; }
+  
+  .btn-save { background: #27ae60; }
+  .btn-save:active { background: #1e8449; }
+  
+  .btn-summary { 
+    background: #8e44ad; 
+    grid-column: span 2; /* Spans across the bottom of the grid */
+    font-size: 15px;
+  }
+  .btn-summary:active { background: #732d91; }
+  
+  .btn-email {
+    background: #2ecc71;
+    color: white;
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+    display: inline-block;
+  }
 </style>
 </head>
 <body>
 
 <div class="card">
-  <h1>Poker Game Tracker</h1>
+  <h1>Live Poker Tracker</h1>
+  
+  <div class="header-actions">
+    <button class="btn btn-reset" onclick="resetGame()">🔄 Reset Numbers</button>
+    <button class="btn btn-save" onclick="manualSave()">💾 Save Players</button>
+    <button class="btn btn-summary" onclick="sendAdminSummary()">📊 Email Master Summary</button>
+  </div>
   
   <div class="header-settings">
-    <label for="unitPrice">Buy-in Unit Price ($):</label>
+    <label for="gameDate">Date:</label>
+    <input type="date" id="gameDate" class="date-picker" onchange="calculate()">
+  </div>
+  
+  <div class="header-settings">
+    <label for="unitPrice">Buy-in Unit ($):</label>
     <input type="number" id="unitPrice" value="24" oninput="calculate()">
   </div>
 
-  <div class="summary">
-    <p><span>Total Pot:</span> <span id="totalPot">$0.00</span></p>
-    <p><span>Total Chips on Table:</span> <span id="totalChips">0</span></p>
-    <p><span>Calculated Chip Value:</span> <span id="chipValue">$0.00</span></p>
+  <div class="summary-grid">
+    <div class="stat-box"><span>Players:</span> <strong id="playerCount">0</strong></div>
+    <div class="stat-box"><span>Total Units:</span> <strong id="totalUnits">0</strong></div>
+    <div class="stat-box"><span>Total Pot:</span> <strong id="totalPot">$0.00</strong></div>
+    <div class="stat-box"><span>Fixed Chip Value:</span> <strong id="chipValue">$0.04</strong></div>
+    <div class="stat-box"><span>Expected Chips:</span> <strong id="expectedChips" class="highlight-chip">0</strong></div>
+    <div class="stat-box"><span>Counted Chips:</span> <strong id="totalChips">0</strong></div>
   </div>
 
   <div id="playersList"></div>
 
-  <button class="btn" onclick="addPlayer()">+ Add Player</button>
+  <button class="btn btn-add" onclick="addPlayer()">+ Add Player</button>
 </div>
 
 <script>
-  // Initialized without certain removed players to keep the ledger clean
+  // Safe Date Initialization
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('gameDate').value = today;
+  } catch (e) {
+    console.log("Date init skipped.");
+  }
+
+  const CHIPS_PER_UNIT = 600;
+  
   let players = [
-    { id: 1, name: 'Rajesh', buyInUnits: 3, endingChips: 2735 },
-    { id: 2, name: 'Ram', buyInUnits: 2, endingChips: 1837 },
-    { id: 3, name: 'Sree', buyInUnits: 5, endingChips: 0 }
+    { id: 1, name: 'Rajesh', email: 'rajesh.suddapalli@gmail.com', buyInUnits: 0, endingChips: 0 },
+    { id: 2, name: 'Ram', email: 'dearramgopal@gmail.com', buyInUnits: 0, endingChips: 0 },
+    { id: 3, name: 'Sree', email: 'sxc690@case.edu', buyInUnits: 0, endingChips: 0 }
   ];
   let nextId = 4;
+
+  // --- Local Storage Functions ---
+  function loadData() {
+    const savedData = localStorage.getItem('pokerAppState');
+    if (savedData) {
+      const parsedData = JSON.parse(savedData);
+      players = parsedData.players || [];
+      nextId = parsedData.nextId || 4;
+    }
+  }
+
+  function saveData() {
+    const dataToSave = { players: players, nextId: nextId };
+    localStorage.setItem('pokerAppState', JSON.stringify(dataToSave));
+  }
+
+  function manualSave() {
+    saveData();
+    alert("✅ Players and game setup saved successfully!");
+  }
+  // -------------------------------
+
+  function addPlayer() {
+    players.push({ id: nextId++, name: '', email: '', buyInUnits: 0, endingChips: 0 });
+    saveData(); 
+    renderPlayers();
+  }
+
+  function removePlayer(id) {
+    players = players.filter(p => p.id !== id);
+    saveData(); 
+    renderPlayers();
+  }
+
+  function updatePlayer(id, field, value) {
+    const player = players.find(p => p.id === id);
+    if (player) {
+      if (field === 'name' || field === 'email') {
+        player[field] = value;
+      } else {
+        player[field] = parseFloat(value) || 0;
+      }
+      calculate();
+    }
+  }
+
+  function resetGame() {
+    if(confirm("Start a new game? This will reset all buy-ins and chips to zero, but keep your players.")) {
+      players.forEach(p => {
+        p.buyInUnits = 0;
+        p.endingChips = 0;
+      });
+      saveData();
+      renderPlayers();
+    }
+  }
+
+  // NEW FEATURE: Send Admin Summary Email
+  function sendAdminSummary() {
+    const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
+    const gameDate = document.getElementById('gameDate').value || 'Unknown Date';
+    const fixedChipValue = unitPrice / CHIPS_PER_UNIT;
+
+    // Map the players to include their calculated math
+    let rankedPlayers = players.map(p => {
+      const totalIn = p.buyInUnits * unitPrice;
+      const payout = p.endingChips * fixedChipValue;
+      const pl = payout - totalIn;
+      return {
+        name: p.name || 'Unnamed Player',
+        buyInUnits: p.buyInUnits,
+        totalIn: totalIn,
+        endingChips: p.endingChips,
+        payout: payout,
+        pl: pl
+      };
+    });
+
+    // Sort the array by Profit/Loss (Highest profit first)
+    rankedPlayers.sort((a, b) => b.pl - a.pl);
+
+    // Build the email body text
+    let bodyText = `MASTER POKER SUMMARY - ${gameDate}\n`;
+    bodyText += `-----------------------------------\n\n`;
+    bodyText += `RANKINGS (By Profit/Loss):\n\n`;
+
+    rankedPlayers.forEach((p, index) => {
+      const sign = p.pl >= 0 ? '+' : '-';
+      bodyText += `${index + 1}. ${p.name.toUpperCase()}\n`;
+      bodyText += `   Net: ${sign}$${Math.abs(p.pl).toFixed(2)}\n`;
+      bodyText += `   (Buy-in: $${p.totalIn.toFixed(2)} | Payout: $${p.payout.toFixed(2)})\n`;
+      bodyText += `-----------------------------------\n`;
+    });
+
+    try {
+      const subject = encodeURIComponent(`Poker Rankings & Summary - ${gameDate}`);
+      const body = encodeURIComponent(bodyText);
+      window.location.href = `mailto:hemanth810@gmail.com?subject=${subject}&body=${body}`;
+    } catch(e) {
+      alert("Unable to open the email app on this device.");
+    }
+  }
 
   function renderPlayers() {
     const list = document.getElementById('playersList');
@@ -170,7 +366,10 @@
       div.className = 'player-row';
       div.innerHTML = `
         <div class="player-header">
-          <input type="text" class="player-name-input" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)">
+          <div class="player-info-stack">
+            <input type="text" class="player-name-input" value="${p.name}" placeholder="Player Name" oninput="updatePlayer(${p.id}, 'name', this.value)">
+            <input type="email" class="player-email-input" value="${p.email || ''}" placeholder="Email Address" oninput="updatePlayer(${p.id}, 'email', this.value)">
+          </div>
           <button class="btn btn-remove" onclick="removePlayer(${p.id})">Remove</button>
         </div>
         <div class="player-inputs">
@@ -184,64 +383,87 @@
           </div>
         </div>
         <div class="player-results">
-          <span>Payout: <strong id="payout-${p.id}">$0.00</strong></span>
-          <span>P/L: <strong id="pl-${p.id}">$0.00</strong></span>
+          <div class="result-data">
+            <span>Payout: <strong id="payout-${p.id}">$0.00</strong></span>
+            <span>P/L: <strong id="pl-${p.id}">$0.00</strong></span>
+          </div>
+          <a href="#" id="email-btn-${p.id}" class="btn-email">✉️ Email</a>
         </div>
       `;
       list.appendChild(div);
     });
+    
     calculate();
-  }
-
-  function addPlayer() {
-    players.push({ id: nextId++, name: 'New Player', buyInUnits: 1, endingChips: 0 });
-    renderPlayers();
-  }
-
-  function removePlayer(id) {
-    players = players.filter(p => p.id !== id);
-    renderPlayers();
-  }
-
-  function updatePlayer(id, field, value) {
-    const player = players.find(p => p.id === id);
-    if (player) {
-      player[field] = field === 'name' ? value : parseFloat(value) || 0;
-      calculate();
-    }
   }
 
   function calculate() {
     const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
+    const gameDate = document.getElementById('gameDate').value || 'Unknown Date';
     
     let totalPot = 0;
-    let totalChips = 0;
+    let totalChipsCounted = 0;
+    let totalUnits = 0;
     
     players.forEach(p => {
+      totalUnits += p.buyInUnits;
       totalPot += p.buyInUnits * unitPrice;
-      totalChips += p.endingChips;
+      totalChipsCounted += p.endingChips;
     });
 
-    const chipValue = totalChips > 0 ? totalPot / totalChips : 0;
+    const expectedChips = totalUnits * CHIPS_PER_UNIT;
+    const fixedChipValue = unitPrice / CHIPS_PER_UNIT;
 
+    document.getElementById('playerCount').innerText = players.length;
+    document.getElementById('totalUnits').innerText = totalUnits;
     document.getElementById('totalPot').innerText = '$' + totalPot.toFixed(2);
-    document.getElementById('totalChips').innerText = totalChips;
-    document.getElementById('chipValue').innerText = '$' + chipValue.toFixed(4);
+    document.getElementById('expectedChips').innerText = expectedChips.toLocaleString();
+    document.getElementById('totalChips').innerText = totalChipsCounted.toLocaleString();
+    document.getElementById('chipValue').innerText = '$' + fixedChipValue.toFixed(4);
 
     players.forEach(p => {
       const totalIn = p.buyInUnits * unitPrice;
-      const payout = p.endingChips * chipValue;
+      const payout = p.endingChips * fixedChipValue;
       const pl = payout - totalIn;
 
       document.getElementById('payout-' + p.id).innerText = '$' + payout.toFixed(2);
       
       const plEl = document.getElementById('pl-' + p.id);
-      plEl.innerText = (pl >= 0 ? '+$' : '-$') + Math.abs(pl).toFixed(2);
+      const plFormatted = (pl >= 0 ? '+$' : '-$') + Math.abs(pl).toFixed(2);
+      plEl.innerText = plFormatted;
       plEl.className = pl >= 0 ? 'result-positive' : 'result-negative';
+
+      try {
+        const subject = encodeURIComponent(`Poker Game Summary - ${gameDate}`);
+        const body = encodeURIComponent(
+`Hi ${p.name},
+
+Here is your summary for the poker game on ${gameDate}:
+
+• Buy-in Units: ${p.buyInUnits}
+• Total Cash In: $${totalIn.toFixed(2)}
+• Ending Chips Count: ${p.endingChips}
+
+------------------------
+• Final Payout: $${payout.toFixed(2)}
+• Net Profit/Loss: ${plFormatted}
+------------------------
+
+Thanks for playing!`
+        );
+        const mailtoLink = `mailto:${p.email || ''}?subject=${subject}&body=${body}`;
+        document.getElementById('email-btn-' + p.id).href = mailtoLink;
+      } catch(e) {
+        document.getElementById('email-btn-' + p.id).href = '#';
+      }
     });
+
+    saveData();
   }
 
+  // Start the application
+  loadData();
   renderPlayers();
+
 </script>
 </body>
 </html>
