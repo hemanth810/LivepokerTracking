@@ -197,7 +197,7 @@
     <div class="stat-box"><span>Players:</span> <strong id="playerCount">0</strong></div>
     <div class="stat-box"><span>Total Units:</span> <strong id="totalUnits">0</strong></div>
     <div class="stat-box"><span>Total Pot:</span> <strong id="totalPot">$0.00</strong></div>
-    <div class="stat-box"><span>Chip Value:</span> <strong id="chipValue">$0.00</strong></div>
+    <div class="stat-box"><span>Fixed Chip Value:</span> <strong id="chipValue">$0.04</strong></div>
     <div class="stat-box"><span>Expected Chips:</span> <strong id="expectedChips" class="highlight-chip">0</strong></div>
     <div class="stat-box"><span>Counted Chips:</span> <strong id="totalChips">0</strong></div>
   </div>
@@ -306,18 +306,22 @@
     });
 
     const expectedChips = totalUnits * CHIPS_PER_UNIT;
-    const chipValue = totalChipsCounted > 0 ? totalPot / totalChipsCounted : 0;
+    
+    // NEW LOGIC: Lock the chip value based on Unit Price / 600 ($24 / 600 = $0.04)
+    const fixedChipValue = unitPrice / CHIPS_PER_UNIT;
 
     document.getElementById('playerCount').innerText = players.length;
     document.getElementById('totalUnits').innerText = totalUnits;
     document.getElementById('totalPot').innerText = '$' + totalPot.toFixed(2);
     document.getElementById('expectedChips').innerText = expectedChips.toLocaleString();
     document.getElementById('totalChips').innerText = totalChipsCounted.toLocaleString();
-    document.getElementById('chipValue').innerText = '$' + chipValue.toFixed(4);
+    document.getElementById('chipValue').innerText = '$' + fixedChipValue.toFixed(4);
 
     players.forEach(p => {
       const totalIn = p.buyInUnits * unitPrice;
-      const payout = p.endingChips * chipValue;
+      
+      // Calculate payout using the strict fixed 4-cent value
+      const payout = p.endingChips * fixedChipValue;
       const pl = payout - totalIn;
 
       document.getElementById('payout-' + p.id).innerText = '$' + payout.toFixed(2);
@@ -349,7 +353,6 @@ Thanks for playing!`
         const mailtoLink = `mailto:${p.email || ''}?subject=${subject}&body=${body}`;
         document.getElementById('email-btn-' + p.id).href = mailtoLink;
       } catch(e) {
-        // If email encoding fails, fallback to blank link
         document.getElementById('email-btn-' + p.id).href = '#';
       }
     });
