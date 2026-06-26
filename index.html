@@ -71,6 +71,7 @@
   .stat-box span { color: #555; }
   .stat-box strong { color: #2c3e50; }
   .highlight-chip { color: #e67e22 !important; }
+  
   .player-row { 
     border-bottom: 1px solid #eee; 
     padding: 16px 0; 
@@ -81,16 +82,30 @@
   .player-header { 
     display: flex; 
     justify-content: space-between; 
-    align-items: center; 
+    align-items: flex-start; 
+  }
+  .player-info-stack {
+    display: flex;
+    flex-direction: column;
+    width: 65%;
+    gap: 6px;
   }
   .player-name-input {
     border: none; 
     font-size: 18px; 
     font-weight: bold; 
-    width: 60%; 
     background: transparent;
     color: #2c3e50;
     border-bottom: 1px dashed #ccc;
+    padding-bottom: 2px;
+  }
+  .player-email-input {
+    border: none; 
+    font-size: 13px; 
+    background: transparent;
+    color: #7f8c8d;
+    border-bottom: 1px dashed #ccc;
+    padding-bottom: 2px;
   }
   .player-inputs { 
     display: flex; 
@@ -115,13 +130,20 @@
   .player-results { 
     display: flex; 
     justify-content: space-between; 
-    font-size: 15px; 
+    align-items: center;
+    font-size: 14px; 
     background: #f8f9fa; 
     padding: 12px; 
     border-radius: 6px; 
   }
+  .result-data {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
   .result-positive { color: #27ae60; font-weight: bold; }
   .result-negative { color: #c0392b; font-weight: bold; }
+  
   .btn { 
     background: #3498db; 
     color: white; 
@@ -143,6 +165,16 @@
     margin: 0; 
     border-radius: 4px;
   }
+  .btn-email {
+    background: #27ae60;
+    color: white;
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -152,7 +184,7 @@
   
   <div class="header-settings">
     <label for="gameDate">Date:</label>
-    <input type="date" id="gameDate" class="date-picker">
+    <input type="date" id="gameDate" class="date-picker" onchange="calculate()">
   </div>
   
   <div class="header-settings">
@@ -178,13 +210,12 @@
   const CHIPS_PER_UNIT = 600;
   
   let players = [
-    { id: 1, name: 'Rajesh', buyInUnits: 3, endingChips: 2735 },
-    { id: 2, name: 'Ram', buyInUnits: 2, endingChips: 1837 },
-    { id: 3, name: 'Sree', buyInUnits: 5, endingChips: 0 }
+    { id: 1, name: 'Rajesh', email: 'rajesh.suddapalli@gmail.com', buyInUnits: 3, endingChips: 2735 },
+    { id: 2, name: 'Ram', email: 'dearramgopal@gmail.com', buyInUnits: 2, endingChips: 1837 },
+    { id: 3, name: 'Sree', email: 'sxc690@case.edu', buyInUnits: 5, endingChips: 0 }
   ];
   let nextId = 4;
 
-  // Set today's date on load
   document.getElementById('gameDate').valueAsDate = new Date();
 
   function renderPlayers() {
@@ -196,7 +227,10 @@
       div.className = 'player-row';
       div.innerHTML = `
         <div class="player-header">
-          <input type="text" class="player-name-input" data-id="${p.id}" data-field="name" value="${p.name}">
+          <div class="player-info-stack">
+            <input type="text" class="player-name-input" data-id="${p.id}" data-field="name" value="${p.name}" placeholder="Player Name">
+            <input type="email" class="player-email-input" data-id="${p.id}" data-field="email" value="${p.email || ''}" placeholder="Email Address">
+          </div>
           <button class="btn btn-remove" data-id="${p.id}">Remove</button>
         </div>
         <div class="player-inputs">
@@ -210,8 +244,11 @@
           </div>
         </div>
         <div class="player-results">
-          <span>Payout: <strong id="payout-${p.id}">$0.00</strong></span>
-          <span>P/L: <strong id="pl-${p.id}">$0.00</strong></span>
+          <div class="result-data">
+            <span>Payout: <strong id="payout-${p.id}">$0.00</strong></span>
+            <span>P/L: <strong id="pl-${p.id}">$0.00</strong></span>
+          </div>
+          <a href="#" id="email-btn-${p.id}" class="btn-email">✉️ Email</a>
         </div>
       `;
       list.appendChild(div);
@@ -221,6 +258,7 @@
 
   function calculate() {
     const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
+    const gameDate = document.getElementById('gameDate').value;
     
     let totalPot = 0;
     let totalChipsCounted = 0;
@@ -233,12 +271,8 @@
     });
 
     const expectedChips = totalUnits * CHIPS_PER_UNIT;
-    
-    // To ensure exact payouts even if a few chips are lost under the table, 
-    // the payout logic divides the total cash pot by the actual chips counted.
     const chipValue = totalChipsCounted > 0 ? totalPot / totalChipsCounted : 0;
 
-    // Update Top Summary Board
     document.getElementById('playerCount').innerText = players.length;
     document.getElementById('totalUnits').innerText = totalUnits;
     document.getElementById('totalPot').innerText = '$' + totalPot.toFixed(2);
@@ -246,7 +280,6 @@
     document.getElementById('totalChips').innerText = totalChipsCounted.toLocaleString();
     document.getElementById('chipValue').innerText = '$' + chipValue.toFixed(4);
 
-    // Update Individual Player Payouts
     players.forEach(p => {
       const totalIn = p.buyInUnits * unitPrice;
       const payout = p.endingChips * chipValue;
@@ -255,43 +288,32 @@
       document.getElementById('payout-' + p.id).innerText = '$' + payout.toFixed(2);
       
       const plEl = document.getElementById('pl-' + p.id);
-      plEl.innerText = (pl >= 0 ? '+$' : '-$') + Math.abs(pl).toFixed(2);
+      const plFormatted = (pl >= 0 ? '+$' : '-$') + Math.abs(pl).toFixed(2);
+      plEl.innerText = plFormatted;
       plEl.className = pl >= 0 ? 'result-positive' : 'result-negative';
+
+      // Dynamically generate the email link
+      const subject = encodeURIComponent(`Poker Game Summary - ${gameDate}`);
+      const body = encodeURIComponent(
+`Hi ${p.name},
+
+Here is your summary for the poker game on ${gameDate}:
+
+• Buy-in Units: ${p.buyInUnits}
+• Total Cash In: $${totalIn.toFixed(2)}
+• Ending Chips Count: ${p.endingChips}
+
+------------------------
+• Final Payout: $${payout.toFixed(2)}
+• Net Profit/Loss: ${plFormatted}
+------------------------
+
+Thanks for playing!`
+      );
+      
+      const mailtoLink = `mailto:${p.email || ''}?subject=${subject}&body=${body}`;
+      document.getElementById('email-btn-' + p.id).href = mailtoLink;
     });
   }
-
-  // --- Modern Event Delegation for Mobile Support ---
   
-  document.getElementById('playersList').addEventListener('input', (e) => {
-    if (e.target.tagName === 'INPUT') {
-      const id = parseInt(e.target.getAttribute('data-id'));
-      const field = e.target.getAttribute('data-field');
-      const player = players.find(p => p.id === id);
-      
-      if (player) {
-        player[field] = field === 'name' ? e.target.value : parseFloat(e.target.value) || 0;
-        calculate();
-      }
-    }
-  });
-
-  document.getElementById('playersList').addEventListener('click', (e) => {
-    if (e.target.classList.contains('btn-remove')) {
-      const id = parseInt(e.target.getAttribute('data-id'));
-      players = players.filter(p => p.id !== id);
-      renderPlayers();
-    }
-  });
-
-  document.getElementById('addPlayerBtn').addEventListener('click', () => {
-    players.push({ id: nextId++, name: 'New Player', buyInUnits: 1, endingChips: 0 });
-    renderPlayers();
-  });
-
-  document.getElementById('unitPrice').addEventListener('input', calculate);
-
-  // Initialize App
-  renderPlayers();
-</script>
-</body>
-</html>
+  document.getElementById('playersList').addEventListener('input', (e
