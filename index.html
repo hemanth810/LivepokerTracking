@@ -151,18 +151,17 @@
   .result-negative { color: #c0392b; font-weight: bold; }
   
   .btn { 
-    background: #3498db; 
     color: white; 
     border: none; 
-    padding: 14px 16px; 
     border-radius: 8px; 
     font-size: 16px; 
     font-weight: bold;
     cursor: pointer; 
     width: 100%; 
-    margin-top: 15px; 
   }
-  .btn:active { background: #2980b9; }
+  .btn-add { background: #3498db; padding: 14px 16px; margin-top: 15px; }
+  .btn-add:active { background: #2980b9; }
+  
   .btn-remove { 
     background: #e74c3c; 
     padding: 6px 12px; 
@@ -171,15 +170,19 @@
     margin: 0; 
     border-radius: 4px;
   }
-  .btn-reset {
-    background: #f39c12;
-    margin-top: 0;
-    font-size: 14px;
+  
+  .btn-half {
+    width: 48%;
     padding: 12px;
+    font-size: 14px;
   }
-  .btn-reset:active { background: #d68910; }
+  .btn-reset { background: #e74c3c; }
+  .btn-reset:active { background: #c0392b; }
+  .btn-save { background: #27ae60; }
+  .btn-save:active { background: #1e8449; }
+  
   .btn-email {
-    background: #27ae60;
+    background: #2ecc71;
     color: white;
     text-decoration: none;
     padding: 8px 12px;
@@ -197,7 +200,8 @@
   <h1>Live Poker Tracker</h1>
   
   <div class="header-actions">
-    <button class="btn btn-reset" onclick="resetGame()">🔄 Reset Game</button>
+    <button class="btn btn-half btn-reset" onclick="resetGame()">🔄 Reset Numbers</button>
+    <button class="btn btn-half btn-save" onclick="manualSave()">💾 Save Players</button>
   </div>
   
   <div class="header-settings">
@@ -221,7 +225,7 @@
 
   <div id="playersList"></div>
 
-  <button class="btn" onclick="addPlayer()">+ Add Player</button>
+  <button class="btn btn-add" onclick="addPlayer()">+ Add Player</button>
 </div>
 
 <script>
@@ -235,7 +239,7 @@
 
   const CHIPS_PER_UNIT = 600;
   
-  // Default roster if local storage is empty
+  // Default roster if local storage is completely empty
   let players = [
     { id: 1, name: 'Rajesh', email: 'rajesh.suddapalli@gmail.com', buyInUnits: 0, endingChips: 0 },
     { id: 2, name: 'Ram', email: 'dearramgopal@gmail.com', buyInUnits: 0, endingChips: 0 },
@@ -260,15 +264,23 @@
     };
     localStorage.setItem('pokerAppState', JSON.stringify(dataToSave));
   }
+
+  // Explicit Save Function for the button
+  function manualSave() {
+    saveData();
+    alert("✅ Players and game setup saved successfully!");
+  }
   // -------------------------------
 
   function addPlayer() {
     players.push({ id: nextId++, name: '', email: '', buyInUnits: 0, endingChips: 0 });
+    saveData(); // Save automatically when a slot is added
     renderPlayers();
   }
 
   function removePlayer(id) {
     players = players.filter(p => p.id !== id);
+    saveData(); // Save automatically when someone is removed
     renderPlayers();
   }
 
@@ -290,6 +302,7 @@
         p.buyInUnits = 0;
         p.endingChips = 0;
       });
+      saveData();
       renderPlayers();
     }
   }
@@ -369,7 +382,6 @@
       plEl.innerText = plFormatted;
       plEl.className = pl >= 0 ? 'result-positive' : 'result-negative';
 
-      // Safe Mailto Generator
       try {
         const subject = encodeURIComponent(`Poker Game Summary - ${gameDate}`);
         const body = encodeURIComponent(
@@ -395,11 +407,10 @@ Thanks for playing!`
       }
     });
 
-    // Save state automatically every time a calculation occurs
     saveData();
   }
 
-  // Start the application: Load data first, then render
+  // Start the application
   loadData();
   renderPlayers();
 
