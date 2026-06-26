@@ -26,12 +26,15 @@
     font-size: 22px; 
     margin-top: 0;
   }
+  
+  /* Top Action Buttons Grid */
   .header-actions {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
+    margin-bottom: 20px;
   }
+  
   .header-settings { 
     display: flex; 
     justify-content: space-between; 
@@ -54,6 +57,7 @@
     width: 140px !important;
     text-align: center !important;
   }
+  
   .summary-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -154,12 +158,13 @@
     color: white; 
     border: none; 
     border-radius: 8px; 
-    font-size: 16px; 
+    font-size: 14px; 
     font-weight: bold;
     cursor: pointer; 
-    width: 100%; 
+    padding: 12px;
+    text-align: center;
   }
-  .btn-add { background: #3498db; padding: 14px 16px; margin-top: 15px; }
+  .btn-add { background: #3498db; width: 100%; font-size: 16px; padding: 14px 16px; margin-top: 15px; }
   .btn-add:active { background: #2980b9; }
   
   .btn-remove { 
@@ -171,15 +176,18 @@
     border-radius: 4px;
   }
   
-  .btn-half {
-    width: 48%;
-    padding: 12px;
-    font-size: 14px;
-  }
   .btn-reset { background: #e74c3c; }
   .btn-reset:active { background: #c0392b; }
+  
   .btn-save { background: #27ae60; }
   .btn-save:active { background: #1e8449; }
+  
+  .btn-summary { 
+    background: #8e44ad; 
+    grid-column: span 2; /* Spans across the bottom of the grid */
+    font-size: 15px;
+  }
+  .btn-summary:active { background: #732d91; }
   
   .btn-email {
     background: #2ecc71;
@@ -200,8 +208,9 @@
   <h1>Live Poker Tracker</h1>
   
   <div class="header-actions">
-    <button class="btn btn-half btn-reset" onclick="resetGame()">🔄 Reset Numbers</button>
-    <button class="btn btn-half btn-save" onclick="manualSave()">💾 Save Players</button>
+    <button class="btn btn-reset" onclick="resetGame()">🔄 Reset Numbers</button>
+    <button class="btn btn-save" onclick="manualSave()">💾 Save Players</button>
+    <button class="btn btn-summary" onclick="sendAdminSummary()">📊 Email Master Summary</button>
   </div>
   
   <div class="header-settings">
@@ -239,7 +248,6 @@
 
   const CHIPS_PER_UNIT = 600;
   
-  // Default roster if local storage is completely empty
   let players = [
     { id: 1, name: 'Rajesh', email: 'rajesh.suddapalli@gmail.com', buyInUnits: 0, endingChips: 0 },
     { id: 2, name: 'Ram', email: 'dearramgopal@gmail.com', buyInUnits: 0, endingChips: 0 },
@@ -258,14 +266,10 @@
   }
 
   function saveData() {
-    const dataToSave = {
-      players: players,
-      nextId: nextId
-    };
+    const dataToSave = { players: players, nextId: nextId };
     localStorage.setItem('pokerAppState', JSON.stringify(dataToSave));
   }
 
-  // Explicit Save Function for the button
   function manualSave() {
     saveData();
     alert("✅ Players and game setup saved successfully!");
@@ -274,13 +278,13 @@
 
   function addPlayer() {
     players.push({ id: nextId++, name: '', email: '', buyInUnits: 0, endingChips: 0 });
-    saveData(); // Save automatically when a slot is added
+    saveData(); 
     renderPlayers();
   }
 
   function removePlayer(id) {
     players = players.filter(p => p.id !== id);
-    saveData(); // Save automatically when someone is removed
+    saveData(); 
     renderPlayers();
   }
 
@@ -304,6 +308,52 @@
       });
       saveData();
       renderPlayers();
+    }
+  }
+
+  // NEW FEATURE: Send Admin Summary Email
+  function sendAdminSummary() {
+    const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
+    const gameDate = document.getElementById('gameDate').value || 'Unknown Date';
+    const fixedChipValue = unitPrice / CHIPS_PER_UNIT;
+
+    // Map the players to include their calculated math
+    let rankedPlayers = players.map(p => {
+      const totalIn = p.buyInUnits * unitPrice;
+      const payout = p.endingChips * fixedChipValue;
+      const pl = payout - totalIn;
+      return {
+        name: p.name || 'Unnamed Player',
+        buyInUnits: p.buyInUnits,
+        totalIn: totalIn,
+        endingChips: p.endingChips,
+        payout: payout,
+        pl: pl
+      };
+    });
+
+    // Sort the array by Profit/Loss (Highest profit first)
+    rankedPlayers.sort((a, b) => b.pl - a.pl);
+
+    // Build the email body text
+    let bodyText = `MASTER POKER SUMMARY - ${gameDate}\n`;
+    bodyText += `-----------------------------------\n\n`;
+    bodyText += `RANKINGS (By Profit/Loss):\n\n`;
+
+    rankedPlayers.forEach((p, index) => {
+      const sign = p.pl >= 0 ? '+' : '-';
+      bodyText += `${index + 1}. ${p.name.toUpperCase()}\n`;
+      bodyText += `   Net: ${sign}$${Math.abs(p.pl).toFixed(2)}\n`;
+      bodyText += `   (Buy-in: $${p.totalIn.toFixed(2)} | Payout: $${p.payout.toFixed(2)})\n`;
+      bodyText += `-----------------------------------\n`;
+    });
+
+    try {
+      const subject = encodeURIComponent(`Poker Rankings & Summary - ${gameDate}`);
+      const body = encodeURIComponent(bodyText);
+      window.location.href = `mailto:hemanth810@gmail.com?subject=${subject}&body=${body}`;
+    } catch(e) {
+      alert("Unable to open the email app on this device.");
     }
   }
 
