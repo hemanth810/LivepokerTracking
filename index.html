@@ -216,7 +216,9 @@
   ];
   let nextId = 4;
 
-  document.getElementById('gameDate').valueAsDate = new Date();
+  // Universally supported way to set today's date
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('gameDate').value = today;
 
   function renderPlayers() {
     const list = document.getElementById('playersList');
@@ -316,4 +318,29 @@ Thanks for playing!`
     });
   }
   
-  document.getElementById('playersList').addEventListener('input', (e
+  document.getElementById('playersList').addEventListener('input', (e) => {
+    if (e.target.tagName === 'INPUT') {
+      const id = parseInt(e.target.getAttribute('data-id'));
+      const field = e.target.getAttribute('data-field');
+      const player = players.find(p => p.id === id);
+      
+      if (player) {
+        if (field === 'name' || field === 'email') {
+          player[field] = e.target.value;
+        } else {
+          player[field] = parseFloat(e.target.value) || 0;
+        }
+        calculate();
+      }
+    }
+  });
+
+  document.getElementById('playersList').addEventListener('click', (e) => {
+    if (e.target.classList.contains('btn-remove')) {
+      const id = parseInt(e.target.getAttribute('data-id'));
+      players = players.filter(p => p.id !== id);
+      renderPlayers();
+    }
+  });
+
+  document.getElementById('addPlayerBtn').addEventListener('click
