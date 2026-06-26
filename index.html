@@ -26,6 +26,12 @@
     font-size: 22px; 
     margin-top: 0;
   }
+  .header-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 10px;
+  }
   .header-settings { 
     display: flex; 
     justify-content: space-between; 
@@ -165,6 +171,13 @@
     margin: 0; 
     border-radius: 4px;
   }
+  .btn-reset {
+    background: #f39c12;
+    margin-top: 0;
+    font-size: 14px;
+    padding: 12px;
+  }
+  .btn-reset:active { background: #d68910; }
   .btn-email {
     background: #27ae60;
     color: white;
@@ -182,6 +195,10 @@
 
 <div class="card">
   <h1>Live Poker Tracker</h1>
+  
+  <div class="header-actions">
+    <button class="btn btn-reset" onclick="resetGame()">🔄 Reset Game</button>
+  </div>
   
   <div class="header-settings">
     <label for="gameDate">Date:</label>
@@ -213,31 +230,48 @@
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('gameDate').value = today;
   } catch (e) {
-    console.log("Date initialization skipped to prevent crash.");
+    console.log("Date init skipped.");
   }
 
   const CHIPS_PER_UNIT = 600;
   
+  // Default roster if local storage is empty
   let players = [
-    { id: 1, name: 'Rajesh', email: 'rajesh.suddapalli@gmail.com', buyInUnits: 3, endingChips: 2735 },
-    { id: 2, name: 'Ram', email: 'dearramgopal@gmail.com', buyInUnits: 2, endingChips: 1837 },
-    { id: 3, name: 'Sree', email: 'sxc690@case.edu', buyInUnits: 5, endingChips: 0 }
+    { id: 1, name: 'Rajesh', email: 'rajesh.suddapalli@gmail.com', buyInUnits: 0, endingChips: 0 },
+    { id: 2, name: 'Ram', email: 'dearramgopal@gmail.com', buyInUnits: 0, endingChips: 0 },
+    { id: 3, name: 'Sree', email: 'sxc690@case.edu', buyInUnits: 0, endingChips: 0 }
   ];
   let nextId = 4;
 
-  // Direct Function: Add a new player
+  // --- Local Storage Functions ---
+  function loadData() {
+    const savedData = localStorage.getItem('pokerAppState');
+    if (savedData) {
+      const parsedData = JSON.parse(savedData);
+      players = parsedData.players || [];
+      nextId = parsedData.nextId || 4;
+    }
+  }
+
+  function saveData() {
+    const dataToSave = {
+      players: players,
+      nextId: nextId
+    };
+    localStorage.setItem('pokerAppState', JSON.stringify(dataToSave));
+  }
+  // -------------------------------
+
   function addPlayer() {
-    players.push({ id: nextId++, name: '', email: '', buyInUnits: 1, endingChips: 0 });
+    players.push({ id: nextId++, name: '', email: '', buyInUnits: 0, endingChips: 0 });
     renderPlayers();
   }
 
-  // Direct Function: Remove a specific player
   function removePlayer(id) {
     players = players.filter(p => p.id !== id);
     renderPlayers();
   }
 
-  // Direct Function: Update player data when typing
   function updatePlayer(id, field, value) {
     const player = players.find(p => p.id === id);
     if (player) {
@@ -250,7 +284,16 @@
     }
   }
 
-  // Render the HTML for all players
+  function resetGame() {
+    if(confirm("Start a new game? This will reset all buy-ins and chips to zero, but keep your players.")) {
+      players.forEach(p => {
+        p.buyInUnits = 0;
+        p.endingChips = 0;
+      });
+      renderPlayers();
+    }
+  }
+
   function renderPlayers() {
     const list = document.getElementById('playersList');
     list.innerHTML = '';
@@ -290,7 +333,6 @@
     calculate();
   }
 
-  // Calculate all the math and update the screen
   function calculate() {
     const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
     const gameDate = document.getElementById('gameDate').value || 'Unknown Date';
@@ -306,8 +348,6 @@
     });
 
     const expectedChips = totalUnits * CHIPS_PER_UNIT;
-    
-    // NEW LOGIC: Lock the chip value based on Unit Price / 600 ($24 / 600 = $0.04)
     const fixedChipValue = unitPrice / CHIPS_PER_UNIT;
 
     document.getElementById('playerCount').innerText = players.length;
@@ -319,8 +359,6 @@
 
     players.forEach(p => {
       const totalIn = p.buyInUnits * unitPrice;
-      
-      // Calculate payout using the strict fixed 4-cent value
       const payout = p.endingChips * fixedChipValue;
       const pl = payout - totalIn;
 
@@ -356,9 +394,13 @@ Thanks for playing!`
         document.getElementById('email-btn-' + p.id).href = '#';
       }
     });
+
+    // Save state automatically every time a calculation occurs
+    saveData();
   }
 
-  // Start the application
+  // Start the application: Load data first, then render
+  loadData();
   renderPlayers();
 
 </script>
