@@ -41,15 +41,15 @@
   .header-settings { 
     display: flex; 
     justify-content: space-between; 
-    margin-bottom: 15px; 
+    margin-bottom: 12px; 
     align-items: center; 
     background: #ecf0f1;
     padding: 12px;
     border-radius: 8px;
   }
-  .header-settings label { font-weight: bold; font-size: 14px; }
+  .header-settings label { font-weight: bold; font-size: 14px; color: #2c3e50; }
   .header-settings input { 
-    width: 60px; 
+    width: 70px; 
     padding: 6px; 
     text-align: right; 
     font-size: 16px; 
@@ -60,6 +60,11 @@
     width: 140px !important;
     text-align: center !important;
   }
+  .email-picker {
+    width: 160px !important;
+    text-align: left !important;
+    font-size: 14px !important;
+  }
   
   .summary-grid {
     display: grid;
@@ -69,6 +74,7 @@
     padding: 15px;
     border-radius: 8px;
     margin-bottom: 20px;
+    margin-top: 5px;
   }
   .stat-box {
     display: flex;
@@ -161,7 +167,7 @@
     color: white; 
     border: none; 
     border-radius: 8px; 
-    font-size: 14px; 
+    font-size: 13px; 
     font-weight: bold;
     cursor: pointer; 
     padding: 12px;
@@ -185,12 +191,11 @@
   .btn-save { background: #27ae60; }
   .btn-save:active { background: #1e8449; }
   
-  .btn-summary { 
-    background: #8e44ad; 
-    grid-column: span 2; /* Spans across the bottom of the grid */
-    font-size: 15px;
-  }
-  .btn-summary:active { background: #732d91; }
+  .btn-admin { background: #8e44ad; }
+  .btn-admin:active { background: #732d91; }
+  
+  .btn-group { background: #2980b9; }
+  .btn-group:active { background: #1f618d; }
   
   .btn-email {
     background: #2ecc71;
@@ -211,9 +216,15 @@
   <h1>Live Poker Tracker</h1>
   
   <div class="header-actions">
-    <button class="btn btn-reset" onclick="resetGame()">🔄 Reset Numbers</button>
-    <button class="btn btn-save" onclick="manualSave()">💾 Save Players</button>
-    <button class="btn btn-summary" onclick="sendAdminSummary()">📊 Email Master Summary</button>
+    <button class="btn btn-reset" onclick="resetPlayers()">🔄 Reset Players</button>
+    <button class="btn btn-save" onclick="manualSave()">💾 Save Game Data</button>
+    <button class="btn btn-admin" onclick="sendAdminSummary()">📊 My Summary</button>
+    <button class="btn btn-group" onclick="sendGroupSummary()">👥 Group Summary</button>
+  </div>
+
+  <div class="header-settings">
+    <label for="masterEmail">Master Email:</label>
+    <input type="email" id="masterEmail" class="email-picker" placeholder="leader@email.com" onchange="manualSave()">
   </div>
   
   <div class="header-settings">
@@ -226,11 +237,16 @@
     <input type="number" id="unitPrice" value="24" oninput="calculate()">
   </div>
 
+  <div class="header-settings">
+    <label for="chipsPerUnit">Chips per Unit:</label>
+    <input type="number" id="chipsPerUnit" value="600" oninput="calculate()">
+  </div>
+
   <div class="summary-grid">
     <div class="stat-box"><span>Players:</span> <strong id="playerCount">0</strong></div>
     <div class="stat-box"><span>Total Units:</span> <strong id="totalUnits">0</strong></div>
     <div class="stat-box"><span>Total Pot:</span> <strong id="totalPot">$0.00</strong></div>
-    <div class="stat-box"><span>Fixed Chip Value:</span> <strong id="chipValue">$0.04</strong></div>
+    <div class="stat-box"><span>Chip Value:</span> <strong id="chipValue">$0.00</strong></div>
     <div class="stat-box"><span>Expected Chips:</span> <strong id="expectedChips" class="highlight-chip">0</strong></div>
     <div class="stat-box"><span>Counted Chips:</span> <strong id="totalChips">0</strong></div>
   </div>
@@ -249,14 +265,11 @@
     console.log("Date init skipped.");
   }
 
-  const CHIPS_PER_UNIT = 600;
-  
   let players = [
-    { id: 1, name: 'Rajesh', email: 'rajesh.suddapalli@gmail.com', buyInUnits: 0, endingChips: 0 },
-    { id: 2, name: 'Ram', email: 'dearramgopal@gmail.com', buyInUnits: 0, endingChips: 0 },
-    { id: 3, name: 'Sree', email: 'sxc690@case.edu', buyInUnits: 0, endingChips: 0 }
+    { id: 1, name: 'Player 1', email: '', buyInUnits: 0, endingChips: 0 },
+    { id: 2, name: 'Player 2', email: '', buyInUnits: 0, endingChips: 0 }
   ];
-  let nextId = 4;
+  let nextId = 3;
 
   // --- Local Storage Functions ---
   function loadData() {
@@ -264,18 +277,35 @@
     if (savedData) {
       const parsedData = JSON.parse(savedData);
       players = parsedData.players || [];
-      nextId = parsedData.nextId || 4;
+      nextId = parsedData.nextId || 3;
+      
+      // Load saved user preferences if they exist
+      if(parsedData.unitPrice) {
+        document.getElementById('unitPrice').value = parsedData.unitPrice;
+      }
+      if(parsedData.chipsPerUnit) {
+        document.getElementById('chipsPerUnit').value = parsedData.chipsPerUnit;
+      }
+      if(parsedData.masterEmail) {
+        document.getElementById('masterEmail').value = parsedData.masterEmail;
+      }
     }
   }
 
   function saveData() {
-    const dataToSave = { players: players, nextId: nextId };
+    const dataToSave = { 
+      players: players, 
+      nextId: nextId,
+      unitPrice: document.getElementById('unitPrice').value,
+      chipsPerUnit: document.getElementById('chipsPerUnit').value,
+      masterEmail: document.getElementById('masterEmail').value
+    };
     localStorage.setItem('pokerAppState', JSON.stringify(dataToSave));
   }
 
   function manualSave() {
     saveData();
-    alert("✅ Players and game setup saved successfully!");
+    alert("✅ Game data and settings saved successfully!");
   }
   // -------------------------------
 
@@ -303,30 +333,32 @@
     }
   }
 
-  function resetGame() {
-    if(confirm("Start a new game? This will reset all buy-ins and chips to zero, but keep your players.")) {
-      players.forEach(p => {
-        p.buyInUnits = 0;
-        p.endingChips = 0;
-      });
+  // REWRITTEN FEATURE: Completely Wipe Players to Default State
+  function resetPlayers() {
+    if(confirm("Are you sure? This will completely wipe all players, emails, and chip counts to start fresh.")) {
+      players = [
+        { id: 1, name: 'Player 1', email: '', buyInUnits: 0, endingChips: 0 },
+        { id: 2, name: 'Player 2', email: '', buyInUnits: 0, endingChips: 0 }
+      ];
+      nextId = 3;
       saveData();
       renderPlayers();
     }
   }
 
-  // NEW FEATURE: Send Admin Summary Email
-  function sendAdminSummary() {
+  // Generate Ranked Data (Helper Function)
+  function getRankedPlayers() {
     const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
-    const gameDate = document.getElementById('gameDate').value || 'Unknown Date';
-    const fixedChipValue = unitPrice / CHIPS_PER_UNIT;
+    const chipsPerUnit = parseInt(document.getElementById('chipsPerUnit').value) || 1; 
+    const fixedChipValue = unitPrice / chipsPerUnit;
 
-    // Map the players to include their calculated math
-    let rankedPlayers = players.map(p => {
+    let ranked = players.map(p => {
       const totalIn = p.buyInUnits * unitPrice;
       const payout = p.endingChips * fixedChipValue;
       const pl = payout - totalIn;
       return {
         name: p.name || 'Unnamed Player',
+        email: p.email || '',
         buyInUnits: p.buyInUnits,
         totalIn: totalIn,
         endingChips: p.endingChips,
@@ -335,10 +367,21 @@
       };
     });
 
-    // Sort the array by Profit/Loss (Highest profit first)
-    rankedPlayers.sort((a, b) => b.pl - a.pl);
+    ranked.sort((a, b) => b.pl - a.pl);
+    return ranked;
+  }
 
-    // Build the email body text
+  // Email to Admin Only
+  function sendAdminSummary() {
+    const gameDate = document.getElementById('gameDate').value || 'Unknown Date';
+    const masterEmail = document.getElementById('masterEmail').value || '';
+    const rankedPlayers = getRankedPlayers();
+
+    if (!masterEmail) {
+      alert("Please enter a Master Email at the top of the settings to send the summary.");
+      return;
+    }
+
     let bodyText = `MASTER POKER SUMMARY - ${gameDate}\n`;
     bodyText += `-----------------------------------\n\n`;
     bodyText += `RANKINGS (By Profit/Loss):\n\n`;
@@ -352,9 +395,55 @@
     });
 
     try {
-      const subject = encodeURIComponent(`Poker Rankings & Summary - ${gameDate}`);
+      const subject = encodeURIComponent(`Admin Summary - ${gameDate}`);
       const body = encodeURIComponent(bodyText);
-      window.location.href = `mailto:hemanth810@gmail.com?subject=${subject}&body=${body}`;
+      window.location.href = `mailto:${masterEmail}?subject=${subject}&body=${body}`;
+    } catch(e) {
+      alert("Unable to open the email app on this device.");
+    }
+  }
+
+  // Email to the Entire Group
+  function sendGroupSummary() {
+    const gameDate = document.getElementById('gameDate').value || 'Unknown Date';
+    const masterEmail = document.getElementById('masterEmail').value || '';
+    const rankedPlayers = getRankedPlayers();
+
+    const allEmails = rankedPlayers
+      .map(p => p.email.trim())
+      .filter(email => email !== '')
+      .join(',');
+
+    if (!masterEmail) {
+      alert("Please enter a Master Email first. The group summary will be sent 'To' the Master Email and 'BCC' the players.");
+      return;
+    }
+
+    if (!allEmails) {
+      alert("No email addresses found for the players. Please add emails to the players first.");
+      return;
+    }
+
+    let bodyText = `POKER GAME RESULTS - ${gameDate}\n`;
+    bodyText += `-----------------------------------\n\n`;
+    bodyText += `Here is the final breakdown and rankings for our recent game:\n\n`;
+
+    rankedPlayers.forEach((p, index) => {
+      const sign = p.pl >= 0 ? '+' : '-';
+      bodyText += `${index + 1}. ${p.name.toUpperCase()}\n`;
+      bodyText += `   Net: ${sign}$${Math.abs(p.pl).toFixed(2)}\n`;
+      bodyText += `   (Buy-in: $${p.totalIn.toFixed(2)} | Payout: $${p.payout.toFixed(2)})\n`;
+      bodyText += `-----------------------------------\n`;
+    });
+
+    bodyText += `\nGreat game everyone!`;
+
+    try {
+      const subject = encodeURIComponent(`Poker Results & Rankings - ${gameDate}`);
+      const body = encodeURIComponent(bodyText);
+      
+      // Addresses the email to the Master Email, but blind-copies (bcc) the rest of the group
+      window.location.href = `mailto:${masterEmail}?bcc=${allEmails}&subject=${subject}&body=${body}`;
     } catch(e) {
       alert("Unable to open the email app on this device.");
     }
@@ -390,7 +479,7 @@
             <span>Payout: <strong id="payout-${p.id}">$0.00</strong></span>
             <span>P/L: <strong id="pl-${p.id}">$0.00</strong></span>
           </div>
-          <a href="#" id="email-btn-${p.id}" class="btn-email">✉️ Email</a>
+          <a href="#" id="email-btn-${p.id}" class="btn-email">✉️ Personal Email</a>
         </div>
       `;
       list.appendChild(div);
@@ -401,6 +490,7 @@
 
   function calculate() {
     const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
+    const chipsPerUnit = parseInt(document.getElementById('chipsPerUnit').value) || 1; 
     const gameDate = document.getElementById('gameDate').value || 'Unknown Date';
     
     let totalPot = 0;
@@ -413,15 +503,17 @@
       totalChipsCounted += p.endingChips;
     });
 
-    const expectedChips = totalUnits * CHIPS_PER_UNIT;
-    const fixedChipValue = unitPrice / CHIPS_PER_UNIT;
+    const expectedChips = totalUnits * chipsPerUnit;
+    const fixedChipValue = unitPrice / chipsPerUnit;
 
     document.getElementById('playerCount').innerText = players.length;
     document.getElementById('totalUnits').innerText = totalUnits;
     document.getElementById('totalPot').innerText = '$' + totalPot.toFixed(2);
     document.getElementById('expectedChips').innerText = expectedChips.toLocaleString();
     document.getElementById('totalChips').innerText = totalChipsCounted.toLocaleString();
-    document.getElementById('chipValue').innerText = '$' + fixedChipValue.toFixed(4);
+    
+    let displayChipValue = fixedChipValue < 0.01 && fixedChipValue > 0 ? fixedChipValue.toFixed(4) : fixedChipValue.toFixed(2);
+    document.getElementById('chipValue').innerText = '$' + displayChipValue;
 
     players.forEach(p => {
       const totalIn = p.buyInUnits * unitPrice;
